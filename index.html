@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Multiply & Stack</title>
+<style>
+:root{--ink:#24304a;--soft:#f7f4ff;--panel:#ffffff;--accent:#6c63ff;--good:#25b87a;--bad:#ef5f72}
+*{box-sizing:border-box} body{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at top,#fff8dc 0,#efeaff 48%,#dcecff 100%);font-family:ui-rounded,"Arial Rounded MT Bold",system-ui,sans-serif;color:var(--ink);overflow:hidden}
+button,input{font:inherit}.shell{width:min(1100px,100vw);height:min(760px,100vh);padding:18px;display:grid;grid-template-columns:minmax(300px,1fr) 290px;gap:18px}
+.game-wrap{position:relative;min-height:0;border:6px solid #fff;border-radius:28px;overflow:hidden;background:linear-gradient(#c9f0ff 0 54%,#e7f8fd 54%);box-shadow:0 18px 50px #625a9d35}
+.game-wrap:before{content:"";position:absolute;inset:auto -10% 0;height:29%;background:linear-gradient(#f1ddbc,#d7b77d);clip-path:polygon(0 35%,8% 21%,18% 33%,28% 18%,40% 31%,52% 15%,66% 31%,79% 17%,90% 30%,100% 18%,100% 100%,0 100%);opacity:.7}
+canvas{display:block;width:100%;height:100%;position:relative;z-index:1}.side{display:flex;flex-direction:column;gap:14px;min-width:0}.card{background:#ffffffd9;border:3px solid #fff;padding:16px;border-radius:22px;box-shadow:0 9px 28px #625a9d22;backdrop-filter:blur(10px)}
+.logo{font-size:28px;line-height:.95;color:#554bdc}.logo span{display:block;color:#f05d82;font-size:18px;margin-top:8px}.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px}.stat{background:#f3f1ff;border-radius:15px;padding:10px;text-align:center}.stat b{display:block;font-size:24px;color:#554bdc}.stat small{font-weight:700;color:#68708b}
+.question{text-align:center}.question small{display:block;font-weight:800;color:#7a8299}.question strong{display:block;font-size:43px;margin:5px 0;color:#2b3552}.answer-row{display:flex;gap:8px}.answer-row input{width:100%;min-width:0;border:3px solid #d9d5ff;border-radius:13px;padding:10px;text-align:center;font-size:25px;font-weight:900;color:#343057;outline:none}.answer-row input:focus{border-color:#6c63ff}.answer-row button,.primary{border:0;border-radius:13px;background:var(--accent);color:#fff;padding:10px 14px;font-weight:900;cursor:pointer;box-shadow:0 5px 0 #4941bd}.answer-row button:active,.primary:active{transform:translateY(3px);box-shadow:0 2px 0 #4941bd}
+.timer{height:12px;background:#e7e5f0;border-radius:99px;overflow:hidden;margin-top:12px}.timer span{display:block;height:100%;width:100%;background:linear-gradient(90deg,#38cf8c,#ffd95c,#f15b74);transform-origin:left}.help{font-size:13px;line-height:1.45;color:#626b81}.help b{color:#3e4762}.mascot{text-align:center;font-size:36px}.overlay{position:absolute;z-index:5;inset:0;display:grid;place-items:center;background:#302b5dc4;padding:20px}.overlay.hidden{display:none}.modal{max-width:450px;text-align:center;background:#fff;border:5px solid #fff;border-radius:28px;padding:28px;box-shadow:0 20px 60px #17142f66}.modal h1{margin:0;font-size:40px;color:#554bdc}.modal p{line-height:1.5;color:#626b81}.primary{font-size:18px;padding:13px 24px}.feedback{height:24px;text-align:center;font-weight:900;margin-top:8px}.good{color:var(--good)}.bad{color:var(--bad)}
+@media(max-width:760px){body{overflow:auto}.shell{height:auto;min-height:100vh;grid-template-columns:1fr;grid-template-rows:62vh auto;padding:10px}.side{display:grid;grid-template-columns:1fr 1fr}.side .question,.side .help{grid-column:span 2}.logo{font-size:21px}.logo span{display:inline;margin-left:5px}.mascot{display:none}}
+</style>
+</head>
+<body>
+<main class="shell">
+<section class="game-wrap" id="gameWrap">
+<canvas id="game" aria-label="Multiplication falling block game"></canvas>
+<div class="overlay" id="startOverlay"><div class="modal"><div style="font-size:55px">🧠➕🎲</div><h1>Multiply & Stack!</h1><p>Solve each multiplication fact before its colorful block reaches the stack. Correct answers clear the falling block. Miss it, and the tower grows!</p><button class="primary" id="startBtn">Start Playing</button></div></div>
+<div class="overlay hidden" id="endOverlay"><div class="modal"><div style="font-size:55px">🌟</div><h1>Great Practice!</h1><p id="endText"></p><button class="primary" id="againBtn">Play Again</button></div></div>
+</section>
+<aside class="side">
+<div class="card"><div class="logo">MULTIPLY <span>& STACK!</span></div></div>
+<div class="card stats"><div class="stat"><b id="score">0</b><small>SCORE</small></div><div class="stat"><b id="level">1</b><small>LEVEL</small></div><div class="stat"><b id="streak">0</b><small>STREAK</small></div><div class="stat"><b id="best">0</b><small>BEST</small></div></div>
+<div class="card question"><small>SOLVE THE FALLING BLOCK</small><strong id="fact">2 × 3 = ?</strong><div class="answer-row"><input id="answer" inputmode="numeric" pattern="[0-9]*" autocomplete="off" aria-label="Answer"><button id="submit">GO!</button></div><div class="timer"><span id="timerBar"></span></div><div class="feedback" id="feedback"></div></div>
+<div class="card help"><b>How to play</b><br>Type the answer and press <b>Enter</b> or <b>GO!</b>. Every 5 correct answers raises the level. Questions get harder and blocks fall faster. The game ends when the stack reaches the top.</div>
+<div class="card mascot">🐻 🐰 🦊</div>
+</aside>
+</main>
+<script>
+(() => {
+const canvas=document.querySelector('#game'),ctx=canvas.getContext('2d');
+const wrap=document.querySelector('#gameWrap'),answer=document.querySelector('#answer'),fact=document.querySelector('#fact'),feedback=document.querySelector('#feedback'),timerBar=document.querySelector('#timerBar');
+const scoreEl=document.querySelector('#score'),levelEl=document.querySelector('#level'),streakEl=document.querySelector('#streak'),bestEl=document.querySelector('#best');
+const startOverlay=document.querySelector('#startOverlay'),endOverlay=document.querySelector('#endOverlay'),endText=document.querySelector('#endText');
+const colors=['#fb7185','#fbbf24','#34d399','#60a5fa','#a78bfa','#f472b6','#22d3ee','#fb923c'];
+let W,H,cols=6,cell,stack=[],block=null,running=false,last=0,score=0,correct=0,streak=0,level=1,best=+(localStorage.getItem('multiply-stack-best')||0),questionStart=0,dropDuration=7500,particles=[];
+bestEl.textContent=best;
+function resize(){const r=wrap.getBoundingClientRect();canvas.width=Math.max(300,Math.floor(r.width*devicePixelRatio));canvas.height=Math.max(300,Math.floor(r.height*devicePixelRatio));ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);W=r.width;H=r.height;cell=Math.min(98.4,(W-30)/cols);}
+addEventListener('resize',resize);resize();
+function reset(){score=correct=streak=0;level=1;stack=Array(cols).fill(0);particles=[];running=true;scoreEl.textContent=0;levelEl.textContent=1;streakEl.textContent=0;feedback.textContent='';startOverlay.classList.add('hidden');endOverlay.classList.add('hidden');newQuestion();last=performance.now();requestAnimationFrame(loop);answer.focus();}
+function difficulty(){level=1+Math.floor(correct/5);dropDuration=Math.max(2167,7500-(level-1)*458);levelEl.textContent=level;}
+function newQuestion(){difficulty();let max;if(level<=2)max=5;else if(level<=4)max=7;else if(level<=6)max=9;else max=12;let a=2+Math.floor(Math.random()*(max-1)),b=2+Math.floor(Math.random()*(max-1));if(level===1){a=2+Math.floor(Math.random()*3);b=2+Math.floor(Math.random()*4)}block={a,b,value:a*b,col:Math.floor(Math.random()*cols),color:colors[Math.floor(Math.random()*colors.length)],progress:0};fact.textContent=`${a} × ${b} = ?`;answer.value='';questionStart=performance.now();timerBar.style.transform='scaleX(1)';}
+function submit(){if(!running||!block)return;const val=Number(answer.value);if(answer.value!==''&&val===block.value){score+=100+level*15+streak*10;correct++;streak++;scoreEl.textContent=score;streakEl.textContent=streak;feedback.textContent=['Great job! ✨','Correct! 🎉','Super! ⭐','You got it! 🌈'][Math.floor(Math.random()*4)];feedback.className='feedback good';burst(block);newQuestion()}else{streak=0;streakEl.textContent=0;feedback.textContent='Try again!';feedback.className='feedback bad';answer.select()}}
+function land(){const c=block.col;stack[c]++;streak=0;streakEl.textContent=0;feedback.textContent=`${block.a} × ${block.b} = ${block.value}`;feedback.className='feedback bad';if(stack[c]*cell>=H-cell*1.6){gameOver();return}newQuestion()}
+function gameOver(){running=false;if(score>best){best=score;localStorage.setItem('multiply-stack-best',best);bestEl.textContent=best}endText.textContent=`You scored ${score.toLocaleString()} points, solved ${correct} facts, and reached level ${level}.`;endOverlay.classList.remove('hidden')}
+function roundRect(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r);}
+function drawBlock(x,y,size,color,text,angle=0){ctx.save();ctx.translate(x+size/2,y+size/2);ctx.rotate(angle);ctx.shadowColor='#28365a33';ctx.shadowBlur=12;ctx.shadowOffsetY=7;roundRect(-size/2,-size/2,size,size,16);ctx.fillStyle=color;ctx.fill();ctx.lineWidth=4;ctx.strokeStyle='#ffffffaa';ctx.stroke();ctx.shadowColor='transparent';ctx.fillStyle='#fff';ctx.font=`900 ${Math.max(18,size*.27)}px ui-rounded,system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,0,-2);ctx.fillStyle='#fff8';ctx.beginPath();ctx.arc(-size*.22,-size*.26,size*.07,0,Math.PI*2);ctx.fill();ctx.restore()}
+function burst(b){const x=15+b.col*cell+cell/2,y=20+b.progress*(H-cell*1.4);for(let i=0;i<18;i++)particles.push({x,y,vx:(Math.random()-.5)*5,vy:(Math.random()-.8)*6,life:1,color:b.color})}
+function updateParticles(){particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.12;p.life-=.025});particles=particles.filter(p=>p.life>0)}
+function draw(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#ffffff35';for(let i=0;i<10;i++){ctx.beginPath();ctx.arc((i*137)%W,40+(i*83)%(H*.48),10+(i%3)*8,0,Math.PI*2);ctx.fill()}
+const baseY=H-10;for(let c=0;c<cols;c++){for(let r=0;r<stack[c];r++){let size=cell-7,x=15+c*cell+3.5,y=baseY-(r+1)*cell;drawBlock(x,y,size,colors[(c+r*3)%colors.length],['×','2','4','6','8'][r%5],Math.sin(c*9+r)*.025)}}
+if(block){const size=cell-7,x=15+block.col*cell+3.5,stackTop=baseY-stack[block.col]*cell-size,y=14+block.progress*Math.max(0,stackTop-14);drawBlock(x,y,size,block.color,`${block.a}×${block.b}`,Math.sin(performance.now()/250)*.035)}
+particles.forEach(p=>{ctx.globalAlpha=p.life;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,4,0,Math.PI*2);ctx.fill()});ctx.globalAlpha=1}
+function loop(now){if(!running)return;const elapsed=now-questionStart;block.progress=Math.min(1,elapsed/dropDuration);timerBar.style.transform=`scaleX(${1-block.progress})`;if(block.progress>=1)land();updateParticles();draw();last=now;if(running)requestAnimationFrame(loop)}
+document.querySelector('#startBtn').onclick=reset;document.querySelector('#againBtn').onclick=reset;document.querySelector('#submit').onclick=submit;answer.addEventListener('keydown',e=>{if(e.key==='Enter')submit()});
+draw();
+})();
+</script>
+</body>
+</html>
